@@ -5,6 +5,11 @@ struct StartWorkoutView: View {
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
     @Query private var profiles: [MuscleProfile]
     @Query private var checkIns: [RecoveryCheckIn]
+    @State private var venue = TrainingVenue.gym
+
+    private var venueExercises: [ExerciseSeed] {
+        ExerciseSeed.exercises(for: venue)
+    }
 
     private var states: [MuscleState] {
         TrainingSnapshotBuilder.muscleStates(
@@ -15,22 +20,25 @@ struct StartWorkoutView: View {
     }
 
     private var allRecommendations: [ExerciseRecommendation] {
-        RecommendationEngine().recommendations(exercises: ExerciseSeed.approved, states: states)
+        RecommendationEngine().recommendations(exercises: venueExercises, states: states)
     }
 
     private var recommendations: [ExerciseRecommendation] {
-        RecommendationEngine().topThree(exercises: ExerciseSeed.approved, states: states)
+        RecommendationEngine().topThree(exercises: venueExercises, states: states)
     }
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                Text("Best choices based on current muscle readiness, time since training, and weekly volume.")
+                venuePicker
+
+                Text("Best \(venue.rawValue.lowercased()) choices based on muscle readiness, time since training, and weekly volume.")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
 
                 ForEach(Array(recommendations.enumerated()), id: \.element.exercise.id) { index, recommendation in
                     NavigationLink {
-                        ExerciseLoggerView(exercise: recommendation.exercise)
+                        ExerciseLoggerView(exercise: recommendation.exercise, venue: venue)
                     } label: {
                         RecommendationCard(position: index + 1, recommendation: recommendation)
                     }
@@ -38,9 +46,9 @@ struct StartWorkoutView: View {
                 }
 
                 NavigationLink {
-                    AllExercisesView(recommendations: allRecommendations)
+                    AllExercisesView(recommendations: allRecommendations, venue: venue)
                 } label: {
-                    Label("View all ranked exercises", systemImage: "list.number")
+                    Label("View all \(venue.rawValue.lowercased()) exercises", systemImage: "list.number")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -57,6 +65,31 @@ struct StartWorkoutView: View {
         }
         .navigationTitle("Start Workout")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private var venuePicker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("TRAINING LOCATION")
+                .font(.caption2.weight(.bold))
+                .tracking(1.4)
+                .foregroundStyle(.secondary)
+
+            Picker("Training location", selection: $venue) {
+                ForEach(TrainingVenue.allCases) { option in
+                    Label(option.rawValue, systemImage: option.symbolName)
+                        .tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Label(venue.guidance, systemImage: venue.symbolName)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .contentTransition(.opacity)
+        }
+        .padding(14)
+        .background(.background.secondary, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .animation(.easeOut(duration: 0.2), value: venue)
     }
 }
 
@@ -150,11 +183,12 @@ extension Int {
 
 private struct AllExercisesView: View {
     let recommendations: [ExerciseRecommendation]
+    let venue: TrainingVenue
 
     var body: some View {
         List(Array(recommendations.enumerated()), id: \.element.exercise.id) { index, recommendation in
             NavigationLink {
-                ExerciseLoggerView(exercise: recommendation.exercise)
+                ExerciseLoggerView(exercise: recommendation.exercise, venue: venue)
             } label: {
                 HStack(spacing: 12) {
                     Text("\(index + 1)")
@@ -167,6 +201,9 @@ private struct AllExercisesView: View {
                         Text("\(recommendation.exercise.primaryMuscle.rawValue) · \(recommendation.primaryState.state.readiness.roundedPercent)% ready")
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                        Text(recommendation.exercise.venueLabel.uppercased())
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(.tint)
                         if let explanation = recommendation.explanation {
                             Text(explanation)
                                 .font(.caption2)
@@ -181,7 +218,7 @@ private struct AllExercisesView: View {
                 .padding(.vertical, 3)
             }
         }
-        .navigationTitle("All Exercises")
+        .navigationTitle("\(venue.rawValue) Exercises")
         .navigationBarTitleDisplayMode(.inline)
     }
 

@@ -8,12 +8,14 @@ struct ExerciseLoggerView: View {
     @Query private var history: [WorkoutExercise]
 
     let exercise: ExerciseSeed
+    let venue: TrainingVenue
     @State private var sets: [EditableSet]
     @State private var loadedPreviousValues = false
     @State private var saveError: String?
 
-    init(exercise: ExerciseSeed) {
+    init(exercise: ExerciseSeed, venue: TrainingVenue? = nil) {
         self.exercise = exercise
+        self.venue = venue ?? (exercise.supports(.gym) ? .gym : .park)
         let count = max(1, Int(exercise.targetSetsPerWeek.rounded()))
         _sets = State(initialValue: (1...count).map {
             EditableSet(setNumber: $0, weight: 0, reps: 8)
@@ -72,6 +74,8 @@ struct ExerciseLoggerView: View {
             HStack {
                 Label(exercise.primaryMuscle.rawValue, systemImage: "figure.strengthtraining.traditional")
                 Spacer()
+                Label(venue.rawValue, systemImage: venue.symbolName)
+                    .foregroundStyle(.secondary)
                 Text("\(completedCount) / \(sets.count) complete")
                     .monospacedDigit()
             }
@@ -126,7 +130,7 @@ struct ExerciseLoggerView: View {
         guard !completedSets.isEmpty else { return }
 
         let now = Date.now
-        let workout = Workout(startedAt: now, finishedAt: now)
+        let workout = Workout(startedAt: now, finishedAt: now, venue: venue)
         let loggedExercise = WorkoutExercise(exercise: definition, workout: workout, order: 0)
         workout.exercises.append(loggedExercise)
         for (index, entry) in completedSets.enumerated() {

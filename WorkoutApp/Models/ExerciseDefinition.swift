@@ -9,6 +9,8 @@ final class ExerciseDefinition {
     var primaryWeight: Double
     var secondaryMuscleName: String?
     var secondaryWeight: Double?
+    var isGymAvailable: Bool = true
+    var isParkAvailable: Bool = false
 
     var primaryMuscle: Muscle { Muscle(rawValue: primaryMuscleName)! }
     var secondaryMuscle: Muscle? { secondaryMuscleName.flatMap(Muscle.init(rawValue:)) }
@@ -20,5 +22,24 @@ final class ExerciseDefinition {
         primaryWeight = seed.primaryWeight
         secondaryMuscleName = seed.secondaryMuscle?.rawValue
         secondaryWeight = seed.secondaryWeight
+        isGymAvailable = seed.supports(.gym)
+        isParkAvailable = seed.supports(.park)
+    }
+
+    func update(from seed: ExerciseSeed) {
+        targetSetsPerWeek = seed.targetSetsPerWeek
+        primaryMuscleName = seed.primaryMuscle.rawValue
+        primaryWeight = seed.primaryWeight
+        secondaryMuscleName = seed.secondaryMuscle?.rawValue
+        secondaryWeight = seed.secondaryWeight
+        isGymAvailable = seed.supports(.gym)
+        isParkAvailable = seed.supports(.park)
+    }
+
+    func supports(_ venue: TrainingVenue) -> Bool {
+        switch venue {
+        case .gym: isGymAvailable
+        case .park: isParkAvailable
+        }
     }
 }

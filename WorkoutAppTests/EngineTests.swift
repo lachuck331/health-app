@@ -50,6 +50,45 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(targets[.lats], 4.5)
     }
 
+    func testParkAlternativesDoNotInflateWeeklyTargets() {
+        XCTAssertEqual(ExerciseSeed.weeklyTargets(), ExerciseSeed.weeklyTargets(from: ExerciseSeed.basePlan))
+        XCTAssertNotEqual(ExerciseSeed.weeklyTargets(), ExerciseSeed.weeklyTargets(from: ExerciseSeed.approved))
+    }
+
+    func testVenueCatalogIsUniqueAndCorrectlyFiltered() {
+        XCTAssertEqual(Set(ExerciseSeed.approved.map(\.name)).count, ExerciseSeed.approved.count)
+
+        for venue in TrainingVenue.allCases {
+            let catalog = ExerciseSeed.exercises(for: venue)
+            XCTAssertFalse(catalog.isEmpty)
+            XCTAssertTrue(catalog.allSatisfy { $0.supports(venue) })
+        }
+
+        XCTAssertTrue(ExerciseSeed.exercises(for: .gym).contains { $0.name == "Pull Ups" })
+        XCTAssertTrue(ExerciseSeed.exercises(for: .park).contains { $0.name == "Pull Ups" })
+        XCTAssertFalse(ExerciseSeed.exercises(for: .gym).contains { $0.name == "Dip Bar Row" })
+        XCTAssertTrue(ExerciseSeed.exercises(for: .park).contains { $0.name == "Dip Bar Row" })
+    }
+
+    func testParkCatalogHasPrimaryMovementForEveryMuscle() {
+        let parkExercises = ExerciseSeed.exercises(for: .park)
+        for muscle in Muscle.allCases {
+            XCTAssertTrue(
+                parkExercises.contains { $0.primaryMuscle == muscle },
+                "Missing primary Park exercise for \(muscle.rawValue)"
+            )
+        }
+    }
+
+    func testRequestedParkMovementsArePresent() {
+        let parkNames = Set(ExerciseSeed.exercises(for: .park).map(\.name))
+        let expected = [
+            "Pull Ups", "Dips", "Push-Up", "Bodyweight Squat", "Plank",
+            "Reverse Plank", "Hollow Body Hold", "Dip Bar Row"
+        ]
+        XCTAssertTrue(Set(expected).isSubset(of: parkNames))
+    }
+
     func testRecommendationRankingRewardsReadiness() {
         let states = [makeState(.quads, readiness: 90), makeState(.chest, readiness: 50)]
         let exercises = [ExerciseSeed("Squat", 3, .quads), ExerciseSeed("Press", 3, .chest)]
@@ -133,6 +172,13 @@ final class EngineTests: XCTestCase {
         XCTAssertEqual(quads.effectiveSetsLast7Days, 3)
         XCTAssertEqual(glutes.effectiveSetsLast7Days, 1.5)
         XCTAssertLessThan(quads.readiness, 20)
+        XCTAssertEqual(workout.venue, .gym)
+    }
+
+    func testExerciseDefinitionStoresNonExclusiveVenueAvailability() {
+        let definition = ExerciseDefinition(seed: ExerciseSeed.basePlan.first { $0.name == "Dips" }!)
+        XCTAssertTrue(definition.supports(.gym))
+        XCTAssertTrue(definition.supports(.park))
     }
 
     func testEveryMuscleHasAnApprovedExercise() {

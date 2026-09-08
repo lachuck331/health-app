@@ -5,6 +5,7 @@ import MuscleMap
 /// Keeping both surfaces visible makes the recovery state scannable without rotation.
 struct AnatomySceneView: View {
     let readiness: [Muscle: Double]
+    let focusedMuscle: Muscle?
     let onMuscleTap: (Muscle) -> Void
 
     var body: some View {
@@ -26,29 +27,38 @@ struct AnatomySceneView: View {
             BodyView(gender: .male, side: side, style: bodyStyle)
                 .showSubGroups()
                 .heatmap(anatomyIntensities)
+                .selected(selectedMapMuscles)
                 .onMuscleSelected { mappedMuscle, _ in
                     guard let muscle = muscle(for: mappedMuscle) else { return }
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     onMuscleTap(muscle)
                 }
-                .frame(height: 350)
+                .frame(height: focusedMuscle == nil ? 350 : 225)
+                .scaleEffect(figureScale(for: side))
+                .opacity(figureOpacity(for: side))
+                .animation(.snappy(duration: 0.36, extraBounce: 0.05), value: focusedMuscle)
                 .accessibilityHint("Tap a highlighted muscle to view details")
 
             Text(label)
                 .font(.caption2.weight(.bold))
                 .tracking(1.8)
                 .foregroundStyle(.tertiary)
+                .opacity(focusedMuscle == nil || figureOpacity(for: side) == 1 ? 1 : 0.3)
         }
     }
 
     private var bodyStyle: BodyViewStyle {
-        BodyViewStyle(
-            defaultFillColor: Color(uiColor: .systemGray5),
-            strokeColor: Color.primary.opacity(0.18),
+        let selectionColor = focusedMuscle.map {
+            ReadinessColorScale.color(for: readiness[$0, default: 100])
+        } ?? .blue
+
+        return BodyViewStyle(
+            defaultFillColor: Color(uiColor: focusedMuscle == nil ? .systemGray5 : .systemGray6),
+            strokeColor: focusedMuscle == nil ? Color.primary.opacity(0.18) : .clear,
             strokeWidth: 0.65,
-            selectionColor: .blue,
-            selectionStrokeColor: .blue,
-            selectionStrokeWidth: 1.5,
+            selectionColor: selectionColor,
+            selectionStrokeColor: .white.opacity(0.92),
+            selectionStrokeWidth: 1.6,
             headColor: Color(uiColor: .systemGray5),
             hairColor: Color(uiColor: .systemGray3),
             shadowColor: .black.opacity(0.08),
@@ -58,12 +68,39 @@ struct AnatomySceneView: View {
     }
 
     private var anatomyIntensities: [MuscleIntensity] {
-        Muscle.allCases.flatMap { muscle in
+        let visibleMuscles = focusedMuscle.map { [$0] } ?? Muscle.allCases
+        return visibleMuscles.flatMap { muscle in
             let score = readiness[muscle, default: 100]
-            let color: Color = score >= 65 ? .green : .red
+            let color = ReadinessColorScale.color(for: score)
             return mapMuscles(for: muscle).map {
                 MuscleIntensity(muscle: $0, intensity: 1, color: color)
             }
+        }
+    }
+
+    private var selectedMapMuscles: Set<MuscleMap.Muscle> {
+        Set(focusedMuscle.map(mapMuscles(for:)) ?? [])
+    }
+
+    private func figureScale(for side: BodySide) -> CGFloat {
+        guard focusedMuscle != nil else { return 1 }
+        return isFocusedSide(side) ? 1.07 : 0.92
+    }
+
+    private func figureOpacity(for side: BodySide) -> Double {
+        guard focusedMuscle != nil else { return 1 }
+        return isFocusedSide(side) ? 1 : 0.24
+    }
+
+    private func isFocusedSide(_ side: BodySide) -> Bool {
+        guard let focusedMuscle else { return true }
+        switch focusedMuscle {
+        case .chest, .biceps, .core, .quads, .adductors, .tibialis:
+            return side == .front
+        case .hamstrings, .glutes, .triceps, .lats, .upperBack, .lowerBack, .calves:
+            return side == .back
+        case .shoulders:
+            return true
         }
     }
 

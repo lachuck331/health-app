@@ -45,12 +45,19 @@ struct ContentView: View {
         if profiles.isEmpty {
             Muscle.allCases.forEach { modelContext.insert(MuscleProfile(muscle: $0)) }
         }
-        if exercises.isEmpty {
-            ExerciseSeed.approved.forEach { modelContext.insert(ExerciseDefinition(seed: $0)) }
+
+        let definitionsByName = Dictionary(uniqueKeysWithValues: exercises.map { ($0.name, $0) })
+        for seed in ExerciseSeed.approved {
+            if let definition = definitionsByName[seed.name] {
+                definition.update(from: seed)
+            } else {
+                modelContext.insert(ExerciseDefinition(seed: seed))
+            }
         }
+
         if selections.isEmpty {
             for muscle in Muscle.allCases {
-                let defaults = ExerciseSeed.approved.filter { $0.primaryMuscle == muscle }
+                let defaults = ExerciseSeed.basePlan.filter { $0.primaryMuscle == muscle }
                 for (index, exercise) in defaults.enumerated() {
                     modelContext.insert(
                         MuscleExerciseSelection(

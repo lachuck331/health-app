@@ -6,13 +6,24 @@ final class Workout {
     @Attribute(.unique) var id: UUID
     var startedAt: Date
     var finishedAt: Date?
+    var venueName: String = TrainingVenue.gym.rawValue
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.workout)
     var exercises: [WorkoutExercise]
 
-    init(id: UUID = UUID(), startedAt: Date = .now, finishedAt: Date? = nil) {
+    var venue: TrainingVenue {
+        TrainingVenue(rawValue: venueName) ?? .gym
+    }
+
+    init(
+        id: UUID = UUID(),
+        startedAt: Date = .now,
+        finishedAt: Date? = nil,
+        venue: TrainingVenue = .gym
+    ) {
         self.id = id
         self.startedAt = startedAt
         self.finishedAt = finishedAt
+        venueName = venue.rawValue
         exercises = []
     }
 }
