@@ -66,8 +66,15 @@ final class EngineTests: XCTestCase {
 
         XCTAssertTrue(ExerciseSeed.exercises(for: .gym).contains { $0.name == "Pull Ups" })
         XCTAssertTrue(ExerciseSeed.exercises(for: .park).contains { $0.name == "Pull Ups" })
-        XCTAssertFalse(ExerciseSeed.exercises(for: .gym).contains { $0.name == "Dip Bar Row" })
+        XCTAssertTrue(ExerciseSeed.exercises(for: .gym).contains { $0.name == "Dip Bar Row" })
         XCTAssertTrue(ExerciseSeed.exercises(for: .park).contains { $0.name == "Dip Bar Row" })
+
+        let parkCatalog = ExerciseSeed.exercises(for: .park)
+        XCTAssertGreaterThan(
+            parkCatalog.filter { $0.supports(.gym) }.count,
+            parkCatalog.count / 2,
+            "Most Park exercises should also be available at the gym"
+        )
     }
 
     func testParkCatalogHasPrimaryMovementForEveryMuscle() {
@@ -179,6 +186,23 @@ final class EngineTests: XCTestCase {
         let definition = ExerciseDefinition(seed: ExerciseSeed.basePlan.first { $0.name == "Dips" }!)
         XCTAssertTrue(definition.supports(.gym))
         XCTAssertTrue(definition.supports(.park))
+    }
+
+    func testCustomExerciseCanBeArchivedAndConvertedForRecommendations() {
+        let definition = ExerciseDefinition(
+            name: "Test Movement",
+            targetSetsPerWeek: 4,
+            primaryMuscle: .shoulders,
+            secondaryMuscle: .triceps,
+            isGymAvailable: true,
+            isParkAvailable: true
+        )
+        XCTAssertFalse(definition.isArchived)
+        XCTAssertEqual(definition.seed.availableAt, [.gym, .park])
+        XCTAssertEqual(definition.seed.secondaryWeight, 0.5)
+
+        definition.isArchived = true
+        XCTAssertTrue(definition.isArchived)
     }
 
     func testEveryMuscleHasAnApprovedExercise() {

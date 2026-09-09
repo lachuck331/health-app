@@ -6,7 +6,13 @@ struct ContentView: View {
     @Query private var exercises: [ExerciseDefinition]
     @Query private var profiles: [MuscleProfile]
     @Query private var selections: [MuscleExerciseSelection]
-    @State private var selectedPage = 1
+    @State private var selectedPage: Int = {
+#if DEBUG
+        Int(ProcessInfo.processInfo.environment["QA_SELECTED_PAGE"] ?? "") ?? 1
+#else
+        1
+#endif
+    }()
 
     var body: some View {
         TabView(selection: $selectedPage) {

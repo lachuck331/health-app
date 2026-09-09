@@ -5,10 +5,13 @@ struct StartWorkoutView: View {
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
     @Query private var profiles: [MuscleProfile]
     @Query private var checkIns: [RecoveryCheckIn]
+    @Query(sort: \ExerciseDefinition.name) private var definitions: [ExerciseDefinition]
     @State private var venue = TrainingVenue.gym
 
     private var venueExercises: [ExerciseSeed] {
-        ExerciseSeed.exercises(for: venue)
+        definitions
+            .filter { !$0.isArchived && $0.supports(venue) }
+            .map(\.seed)
     }
 
     private var states: [MuscleState] {

@@ -1,11 +1,27 @@
 import SwiftUI
 import SwiftData
 
+private enum BodySection: String, CaseIterable, Identifiable {
+    case body = "Body"
+    case exercises = "Exercises"
+
+    var id: String { rawValue }
+}
+
 struct AnatomyReadinessView: View {
     @Query(sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
     @Query private var profiles: [MuscleProfile]
     @Query private var checkIns: [RecoveryCheckIn]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var selectedSection: BodySection = {
+#if DEBUG
+        ProcessInfo.processInfo.environment["QA_BODY_SECTION"] == BodySection.exercises.rawValue
+            ? .exercises
+            : .body
+#else
+        .body
+#endif
+    }()
     @State private var focusedMuscle: Muscle?
     @State private var detailMuscle: Muscle?
     @State private var pendingDetailTask: Task<Void, Never>?
@@ -27,6 +43,46 @@ struct AnatomyReadinessView: View {
     }
 
     var body: some View {
+        VStack(spacing: 0) {
+            Picker("Body section", selection: $selectedSection) {
+                ForEach(BodySection.allCases) { section in
+                    Text(section.rawValue).tag(section)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(Color(uiColor: .systemGroupedBackground))
+
+            switch selectedSection {
+            case .body:
+                bodyMap
+            case .exercises:
+                ExerciseLibraryView()
+            }
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(navigationTitle)
+        .navigationBarTitleDisplayMode(.inline)
+#if DEBUG
+        .task {
+            guard focusedMuscle == nil,
+                  let rawValue = ProcessInfo.processInfo.environment["QA_FOCUSED_MUSCLE"],
+                  let muscle = Muscle(rawValue: rawValue)
+            else { return }
+            focus(on: muscle)
+        }
+#endif
+    }
+
+    private var navigationTitle: String {
+        switch selectedSection {
+        case .body: focusedMuscle?.rawValue ?? "Body"
+        case .exercises: "Exercise Library"
+        }
+    }
+
+    private var bodyMap: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 if focusedMuscle == nil {
@@ -72,18 +128,6 @@ struct AnatomyReadinessView: View {
             .padding(.bottom, 30)
             .animation(reduceMotion ? nil : .snappy(duration: 0.38, extraBounce: 0.04), value: focusedMuscle)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
-        .navigationTitle(focusedMuscle?.rawValue ?? "Body")
-        .navigationBarTitleDisplayMode(.inline)
-#if DEBUG
-        .task {
-            guard focusedMuscle == nil,
-                  let rawValue = ProcessInfo.processInfo.environment["QA_FOCUSED_MUSCLE"],
-                  let muscle = Muscle(rawValue: rawValue)
-            else { return }
-            focus(on: muscle)
-        }
-#endif
     }
 
     private var overviewHeader: some View {
@@ -193,6 +237,7 @@ struct AnatomyReadinessView: View {
 private struct MuscleReadinessDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var selections: [MuscleExerciseSelection]
+    @Query(sort: \ExerciseDefinition.name) private var definitions: [ExerciseDefinition]
     @State private var showsApprovedExercises = false
 
     let muscle: Muscle
@@ -327,8 +372,8 @@ private struct MuscleReadinessDetailView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(selection.exerciseName)
                     .font(.body.weight(.semibold))
-                if let exercise = ExerciseSeed.approved.first(where: { $0.name == selection.exerciseName }) {
-                    Text(exercise.primaryMuscle == muscle ? "Primary" : "Secondary")
+                if let definition = definitions.first(where: { $0.name == selection.exerciseName }) {
+                    Text(definition.isArchived ? "Archived" : (definition.primaryMuscle == muscle ? "Primary" : "Secondary"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -357,8 +402,11 @@ private struct MuscleReadinessDetailView: View {
     }
 
     private var involvingExercises: [ExerciseSeed] {
-        ExerciseSeed.approved
-            .filter { $0.primaryMuscle == muscle || $0.secondaryMuscle == muscle }
+        definitions
+            .filter {
+                !$0.isArchived && ($0.primaryMuscle == muscle || $0.secondaryMuscle == muscle)
+            }
+            .map(\.seed)
             .sorted {
                 if ($0.primaryMuscle == muscle) != ($1.primaryMuscle == muscle) {
                     return $0.primaryMuscle == muscle

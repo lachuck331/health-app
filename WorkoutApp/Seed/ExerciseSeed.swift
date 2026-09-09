@@ -83,21 +83,21 @@ struct ExerciseSeed: Identifiable, Equatable, Sendable {
     ]
 
     static let parkAlternatives: [ExerciseSeed] = [
-        .init("Bodyweight Squat", 3, .quads, secondary: .glutes, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Bulgarian Split Squat", 3, .quads, secondary: .glutes, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Nordic Hamstring Curl", 3, .hamstrings, secondary: .glutes, secondaryWeight: 0.25, availableAt: [.park]),
-        .init("Single-Leg Glute Bridge", 3, .glutes, secondary: .hamstrings, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Side-Lying Leg Raise", 2, .glutes, availableAt: [.park]),
-        .init("Copenhagen Plank", 2, .adductors, secondary: .core, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Plank", 3, .core, availableAt: [.park]),
-        .init("Reverse Plank", 3, .core, secondary: .lowerBack, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Push-Up", 3, .chest, secondary: .triceps, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Close-Grip Push-Up", 3, .triceps, secondary: .chest, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Pike Push-Up", 3, .shoulders, secondary: .triceps, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Dip Bar Row", 3, .upperBack, secondary: .lats, secondaryWeight: 0.5, availableAt: [.park]),
-        .init("Superman Hold", 3, .lowerBack, secondary: .glutes, secondaryWeight: 0.25, availableAt: [.park]),
-        .init("Wall Tibialis Raise", 2, .tibialis, secondary: .calves, secondaryWeight: 0.25, availableAt: [.park]),
-        .init("Chin-Up", 3, .biceps, secondary: .lats, secondaryWeight: 0.5, availableAt: [.park])
+        .init("Bodyweight Squat", 3, .quads, secondary: .glutes, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Bulgarian Split Squat", 3, .quads, secondary: .glutes, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Nordic Hamstring Curl", 3, .hamstrings, secondary: .glutes, secondaryWeight: 0.25, availableAt: [.gym, .park]),
+        .init("Single-Leg Glute Bridge", 3, .glutes, secondary: .hamstrings, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Side-Lying Leg Raise", 2, .glutes, availableAt: [.gym, .park]),
+        .init("Copenhagen Plank", 2, .adductors, secondary: .core, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Plank", 3, .core, availableAt: [.gym, .park]),
+        .init("Reverse Plank", 3, .core, secondary: .lowerBack, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Push-Up", 3, .chest, secondary: .triceps, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Close-Grip Push-Up", 3, .triceps, secondary: .chest, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Pike Push-Up", 3, .shoulders, secondary: .triceps, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Dip Bar Row", 3, .upperBack, secondary: .lats, secondaryWeight: 0.5, availableAt: [.gym, .park]),
+        .init("Superman Hold", 3, .lowerBack, secondary: .glutes, secondaryWeight: 0.25, availableAt: [.gym, .park]),
+        .init("Wall Tibialis Raise", 2, .tibialis, secondary: .calves, secondaryWeight: 0.25, availableAt: [.gym, .park]),
+        .init("Chin-Up", 3, .biceps, secondary: .lats, secondaryWeight: 0.5, availableAt: [.gym, .park])
     ]
 
     static let approved = basePlan + parkAlternatives
